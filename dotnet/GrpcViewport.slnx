@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="GrpcViewport.Host/GrpcViewport.Host.csproj" />
+  <Project Path="GrpcViewport.Server/GrpcViewport.Server.csproj" />
+  <Project Path="GrpcViewport.WinForms/GrpcViewport.WinForms.csproj" Id="2b9bd712-8300-4350-bb7c-969cbbb1fb7b" />
+  <Project Path="GrpcViewport.Wpf/GrpcViewport.Wpf.csproj" Id="36c3b61d-06c2-4d20-881c-f97e6250d7de" />
+</Solution>

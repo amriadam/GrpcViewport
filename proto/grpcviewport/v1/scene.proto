@@ -1,0 +1,100 @@
+syntax = "proto3";
+package grpcviewport.v1;
+option csharp_namespace = "GrpcViewport.V1";
+
+service SceneService 
+{
+  rpc AddGeometry(AddGeometryRequest) returns (GeometryHandle);
+  rpc RemoveGeometry(RemoveGeometryRequest) returns (RemoveGeometryResponse);
+  rpc SubscribeCamera(SubscribeCameraRequest) returns (stream CameraState);
+}
+
+message GeometryHandle 
+{ 
+    uint64 id = 1; 
+}
+
+message Vec3 
+{ 
+    float x = 1; 
+    float y = 2; 
+    float z = 3; 
+}
+
+// RGBA 0..1; a == 0 is treated as opaque
+message Color 
+{ 
+    float r = 1; 
+    float g = 2; 
+    float b = 3; 
+    float a = 4; 
+}
+
+// 16 floats, OpenGL memory order (translation in m[12..14]) = Babylon's layout
+message Matrix4 
+{ 
+    repeated float m = 1; 
+}
+
+message AddGeometryRequest 
+{
+  string  name = 1;
+  Matrix4 transform = 2;
+  oneof geometry 
+  {
+        PolylineBatch polylines = 10;
+        PointCloudBatch point_clouds = 11;
+        MeshBatch meshes = 12;
+  }
+}
+
+// positions: flat xyz. colors: one 0xRRGGBBAA per vertex, or empty to use `color`.
+message PolylineBatch 
+{ 
+    repeated Polyline polylines = 1; 
+}
+
+message Polyline 
+{
+  repeated float   positions = 1;
+  repeated fixed32 colors = 2;
+  Color            color = 3;
+  bool             closed = 4;
+}
+
+message PointCloudBatch { repeated PointCloud clouds = 1; float point_size = 2; }
+message PointCloud {
+  repeated float positions = 1;
+  repeated fixed32 colors = 2;
+  Color color = 3;
+}
+
+message MeshBatch { repeated Mesh meshes = 1; }
+message Mesh {
+  repeated float positions = 1;
+  repeated uint32 indices = 2;     // triangles, counter-clockwise = front
+  repeated float normals = 3;      // optional, computed when empty
+  repeated fixed32 colors = 4;
+  Color color = 5;
+  Matrix4 transform = 6;
+  repeated Matrix4 instances = 7;  // optional: GPU instancing
+}
+
+message RemoveGeometryRequest { GeometryHandle handle = 1; }
+message RemoveGeometryResponse {}
+
+message SubscribeCameraRequest { float max_rate_hz = 1; }
+message CameraState {
+  Vec3 position = 1;
+  Vec3 target = 2;
+  Vec3 up = 3;
+  float fov_y = 4;
+  float near = 5;
+  float far = 6;
+  Matrix4 view = 7;
+  Matrix4 projection = 8;
+  uint32 viewport_width = 9;
+  uint32 viewport_height = 10;
+  uint64 sequence = 11;
+  int64 timestamp_ms = 12;  // Unix epoch ms (UTC)
+}

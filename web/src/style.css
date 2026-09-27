@@ -1,0 +1,123 @@
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #14171c;
+  color: #e6e9ee;
+  font: 13px system-ui, sans-serif;
+}
+
+#viewport {
+  width: 100%;
+  height: 100%;
+  display: block;
+  outline: none;
+  touch-action: none;
+}
+
+.pill {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(24, 28, 35, 0.86);
+}
+
+.loading {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(20, 23, 28, 0.55);
+  color: #e6e6e6;
+  font: 14px system-ui, sans-serif;
+  z-index: 10;
+}
+
+/* without this, display:flex above overrides the hidden attribute */
+.loading[hidden] {
+  display: none;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #4fc3f7;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.nav-gizmo {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  width: 110px;   /* must match SIZE in nav-gizmo.ts */
+  height: 110px;
+  z-index: 5;     /* above the 3D canvas, below the loading overlay (10) */
+  touch-action: none;
+  user-select: none;
+}
+/* ---------- toggle buttons under the gizmo ---------- */
+.view-toolbar {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  z-index: 5;
+}
+
+.view-toggle {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(30, 34, 41, 0.85);
+  color: #8a939e;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.view-toggle:hover {
+  background: rgba(50, 56, 66, 0.95);
+  color: #d0d6dc;
+}
+
+.view-toggle[aria-pressed="true"] {
+  background: rgba(79, 195, 247, 0.18);
+  border-color: #4fc3f7;
+  color: #ffffff;
+}
+
+.view-toggle:focus-visible {
+  outline: 2px solid #4fc3f7;
+  outline-offset: 2px;
+}
+
+.view-toggle svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* axis colours in the icon (same as the 3D lines); dimmed while off */
+.view-toggle .ax-x { stroke: #ff3352; }
+.view-toggle .ax-y { stroke: #8bdc00; }
+.view-toggle .ax-z { stroke: #2890ff; }
+.view-toggle[aria-pressed="false"] svg path[class^="ax-"] { opacity: 0.45; }

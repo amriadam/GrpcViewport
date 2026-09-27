@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\GrpcViewport.Server\GrpcViewport.Server.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+	<RootNamespace>GrpcViewport.Host</RootNamespace>
+  </PropertyGroup>
+
+  <!-- The built Babylon page (web\dist) is copied next to the exe into viewer\ -->
+  <ItemGroup>
+  	<None 
+		Include="..\..\web\dist\**\*"
+  		Link="viewer\%(RecursiveDir)%(Filename)%(Extension)"
+  		CopyToOutputDirectory="PreserveNewest"
+  		Visible="false" />
+  </ItemGroup>
+
+</Project>

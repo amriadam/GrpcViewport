@@ -1,0 +1,34 @@
+# ================= Node / Vite (web/) =================
+node_modules/
+dist/
+dist-ssr/
+*.local
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Generated from the .proto files by buf (npm install / dev / build regenerate it)
+web/src/gen/
+
+# ================= .NET =================
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.rsuser
+*.userprefs
+TestResults/
+*.nupkg
+
+# Classic packages.config restore folder (WinForms project). VS restores it on build.
+packages/
+
+# ================= Editors / OS =================
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db

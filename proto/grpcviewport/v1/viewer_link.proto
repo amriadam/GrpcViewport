@@ -1,0 +1,22 @@
+syntax = "proto3";
+package grpcviewport.v1;
+import "grpcviewport/v1/scene.proto";
+option csharp_namespace = "GrpcViewport.V1";
+
+service ViewerLink {
+  rpc Attach(AttachRequest) returns (stream ViewerCommand);     // host -> page
+  rpc ReportCamera(CameraState) returns (ReportCameraResponse); // page -> host
+}
+
+message AttachRequest { string viewer_id = 1; }
+message ViewerCommand {
+  oneof command {
+    AddGeometryCommand add = 1;
+    RemoveGeometryCommand remove = 2;
+    ClearCommand clear = 3;
+  }
+}
+message AddGeometryCommand { GeometryHandle handle = 1; AddGeometryRequest request = 2; }
+message RemoveGeometryCommand { GeometryHandle handle = 1; }
+message ClearCommand {}
+message ReportCameraResponse {}

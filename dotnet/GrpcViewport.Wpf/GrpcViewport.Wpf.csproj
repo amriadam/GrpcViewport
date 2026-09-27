@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+	<RootNamespace>GrpcViewport.Wpf</RootNamespace>
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GrpcViewport.Server\GrpcViewport.Server.csproj" />
+  </ItemGroup>
+
+	<!-- The built page, copied to bin\...\viewer\ (same trick as the Host) -->
+  <ItemGroup>
+  	<None Include="..\..\web\dist\**\*"
+  			Link="viewer\%(RecursiveDir)%(Filename)%(Extension)"
+  			CopyToOutputDirectory="PreserveNewest"
+  			Visible="false" />
+  </ItemGroup>
+  
+  <!-- Reuse the WinForms demo shapes: one file, compiled into both apps -->
+  <ItemGroup>
+  	<Compile Include="..\GrpcViewport.WinForms\DemoGeometry.cs" Link="DemoGeometry.cs" />
+  </ItemGroup>
+
+</Project>

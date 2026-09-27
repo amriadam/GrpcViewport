@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>GrpcViewport.Server</RootNamespace>
+	</PropertyGroup>
+
+	<!-- Kestrel + ASP.NET Core, without turning this library into a web app project -->
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Grpc.AspNetCore" Version="2.66.0" />
+		<PackageReference Include="Grpc.AspNetCore.Web" Version="2.66.0" />
+	</ItemGroup>
+
+	<!-- Project-wide "using GrpcViewport.V1;" for the generated types -->
+	<ItemGroup>
+		<Using Include="GrpcViewport.V1" />
+	</ItemGroup>
+
+	<!-- C# generated at build time into obj\ -->
+	<ItemGroup>
+		<Protobuf Include="..\..\proto\grpcviewport\v1\scene.proto" ProtoRoot="..\..\proto" GrpcServices="Server" />
+		<Protobuf Include="..\..\proto\grpcviewport\v1\viewer_link.proto" ProtoRoot="..\..\proto" GrpcServices="Server" />
+	</ItemGroup>
+
+</Project>

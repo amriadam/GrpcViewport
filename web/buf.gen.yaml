@@ -1,0 +1,9 @@
+version: v2
+inputs:
+  - directory: ../proto        # read the .proto files from GrpcViewport\proto
+plugins:
+  - local: protoc-gen-es       # the plugin installed in node_modules
+    out: src/gen               # write TypeScript into web\src\gen
+    opt:
+      - target=ts              # .ts files (not .js + .d.ts)
+      - import_extension=js    # generated files import each other as "./x_pb.js" (Vite resolves it)
