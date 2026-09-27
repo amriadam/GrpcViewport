@@ -11,7 +11,7 @@ public partial class MainWindow : Window
 {
     private ViewerServer? _server;
     private readonly Stack<GeometryHandle> _handles = new();
-
+    private readonly CancellationTokenSource _cameraCts = new();
     public MainWindow()
     {
         InitializeComponent();
@@ -58,13 +58,37 @@ public partial class MainWindow : Window
 
         Tools.IsEnabled = true;
         StatusText.Text = "server running on 127.0.0.1:8080 (in-process)";
+
+        _ = WatchCameraAsync(_server.Hub, _cameraCts.Token);
     }
 
     private async void OnClosed(object? sender, EventArgs e)
     {
+        _cameraCts.Cancel();
+
         if (_server is not null)
         {
             await _server.DisposeAsync(); // stops Kestrel, closes the page's stream
+        }
+    }
+
+
+    /// <summary>Reads the camera stream until the token is cancelled.</summary>
+    private async Task WatchCameraAsync(SceneHub hub, CancellationToken ct)
+    {
+        try
+        {
+            // Resumes on the UI thread, so UI elements can be set directly.
+            await foreach (var c in hub.SubscribeCamera(30, ct))
+            {
+                Title = $"GrpcViewport – camera #{c.Sequence}: " +
+                        $"pos ({c.Position.X:F2}, {c.Position.Y:F2}, {c.Position.Z:F2})  " +
+                        $"target ({c.Target.X:F2}, {c.Target.Y:F2}, {c.Target.Z:F2})";
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // cancelled in OnClosed: normal end
         }
     }
 
@@ -82,6 +106,9 @@ public partial class MainWindow : Window
 
     private async void AddBoxes_Click(object sender, RoutedEventArgs e) =>
         await AddAsync("boxes", DemoGeometry.InstancedBoxes);
+
+    private async void AddSegment_Click(object sender, RoutedEventArgs e) =>
+        await AddGroupAsync("segment", DemoGeometry.SceneSegment);
 
     private void RemoveLast_Click(object sender, RoutedEventArgs e)
     {
@@ -111,6 +138,49 @@ public partial class MainWindow : Window
             GeometryHandle handle = await Task.Run(() => hub.Add(build()));
             _handles.Push(handle);
             StatusText.Text = $"added #{handle.Id} {label} · pages attached: {hub.ViewerCount}";
+        }
+        catch (GeometryValidationException ex)
+        {
+            // In-process there's no RpcException: the hub throws this directly.
+            StatusText.Text = "invalid geometry: " + ex.Message;
+        }
+        finally
+        {
+            Tools.IsEnabled = true;
+        }
+    }
+
+    private async Task AddGroupAsync(string label, Func<AddGeometryRequest[]> build)
+    {
+        
+        if (_server is null)
+        {
+            return;
+        }
+
+        SceneHub hub = _server.Hub;
+        Tools.IsEnabled = false;
+        StatusText.Text = $"adding {label}…";
+        try
+        {
+            List<GeometryHandle> handles = [];
+            
+            await Task.Run(() =>
+            {
+                var requests = build();
+
+                foreach (var request in requests)
+                {
+                    handles.Add(hub.Add(request));
+                }
+            });
+
+            foreach (var handle in handles)
+            {
+                _handles.Push(handle);
+                StatusText.Text = $"added #{handle.Id} {label} · pages attached: {hub.ViewerCount}";
+
+            }
         }
         catch (GeometryValidationException ex)
         {

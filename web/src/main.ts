@@ -8,6 +8,8 @@ import { createWatchedFetch } from "./viewer/frame-watcher";
 import { SceneHelpers } from "./viewer/scene-helpers";
 import { NavGizmo } from "./viewer/nav-gizmo";
 import { ViewToolbar } from "./viewer/view-toolbar";
+import { CameraReporter } from "./viewer/camera-reporter";
+
 // ------------------------------------------------------------------ scene --
 const canvas = document.getElementById("viewport") as HTMLCanvasElement;
 const engine = new Engine(canvas, true);
@@ -69,6 +71,7 @@ const watchedFetch = createWatchedFetch({
 });
 
 const clients = createBridgeClients(BRIDGE_URL, watchedFetch);
+const cameraReporter = new CameraReporter(camera, engine, (state) => clients.link.reportCamera(state));
 const statusEl = document.getElementById("status")!;
 
 async function handleCommand(cmd: ViewerCommand): Promise<void> {
@@ -102,7 +105,14 @@ void runAttachLoop(clients, handleCommand, (status, detail) => {
       : status === "connecting"
         ? `Connecting to ${BRIDGE_URL}…`
         : `Offline · ${detail ?? ""}`;
-  if (status === "disconnected") {
+  
+  if (status === "connected") 
+    {
+    cameraReporter.invalidate();
+  }
+
+  if (status === "disconnected")
+  {
     frameIsBig.length = 0; // a new stream starts from scratch
     overlay.hide();
   }

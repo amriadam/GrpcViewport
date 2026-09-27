@@ -70,7 +70,128 @@ namespace GrpcViewport.WinForms
             return new AddGeometryRequest { Name = "instanced-boxes", Meshes = new MeshBatch { Meshes = { cube } } };
         }
 
-        /// <summary>Unit cube: 24 vertices (4 per face, flat shading), counter-clockwise triangles.</summary>
+        /// <summary>
+        /// A "scene segment": wire box + very transparent faces + local XYZ axes inside,
+        /// slightly tilted (not parallel to the main planes).
+        /// Returns TWO requests (lines, faces) that share the same transform.
+        /// </summary>
+        public static AddGeometryRequest[] SceneSegment()
+        {
+            // Box size 4 x 2 x 3, centred on the segment's local origin
+            const float hx = 2f, hy = 1f, hz = 1.5f;
+
+            // Pose: yaw 25° (about Y), pitch 10° (about X), roll -8° (about Z), moved to (3, 1.5, -2)
+            Matrix4 pose = Pose(25, 10, -8, 3f, 1.5f, -2f);
+
+            // ---------------------------------------------------------- lines --
+            var lines = new PolylineBatch();
+            var edge = new Color { R = 0.85f, G = 0.9f, B = 1f }; // A = 0 -> opaque
+
+            // bottom and top rectangle (closed), then the 4 vertical edges
+            lines.Polylines.Add(Line(edge, true, -hx, -hy, -hz, hx, -hy, -hz, hx, -hy, hz, -hx, -hy, hz));
+            lines.Polylines.Add(Line(edge, true, -hx, hy, -hz, hx, hy, -hz, hx, hy, hz, -hx, hy, hz));
+            lines.Polylines.Add(Line(edge, false, -hx, -hy, -hz, -hx, hy, -hz));
+            lines.Polylines.Add(Line(edge, false, hx, -hy, -hz, hx, hy, -hz));
+            lines.Polylines.Add(Line(edge, false, hx, -hy, hz, hx, hy, hz));
+            lines.Polylines.Add(Line(edge, false, -hx, -hy, hz, -hx, hy, hz));
+
+            // local coordinate system at the centre: shaft + arrow head per axis
+            float len = 0.8f * Math.Min(hx, Math.Min(hy, hz)); // fits inside the box
+            float head = 0.2f * len;
+            float w = 0.5f * head;
+
+            var red = new Color { R = 1f, G = 0.2f, B = 0.32f };
+            var green = new Color { R = 0.55f, G = 0.86f, B = 0f };
+            var blue = new Color { R = 0.16f, G = 0.56f, B = 1f };
+
+            lines.Polylines.Add(Line(red, false, 0, 0, 0, len, 0, 0));
+            lines.Polylines.Add(Line(red, false, len - head, w, 0, len, 0, 0, len - head, -w, 0));
+
+            lines.Polylines.Add(Line(green, false, 0, 0, 0, 0, len, 0));
+            lines.Polylines.Add(Line(green, false, w, len - head, 0, 0, len, 0, -w, len - head, 0));
+
+            lines.Polylines.Add(Line(blue, false, 0, 0, 0, 0, 0, len));
+            lines.Polylines.Add(Line(blue, false, w, 0, len - head, 0, 0, len, -w, 0, len - head));
+
+            // ---------------------------------------------------------- faces --
+            // 4 own vertices per face -> flat normals; corners wound CCW seen from outside.
+            var box = new Mesh { Color = new Color { R = 0.45f, G = 0.75f, B = 1f, A = 0.07f } };
+            Quad(box, hx, hy, hz, 1, -1, -1, 1, 1, -1, 1, 1, 1, 1, -1, 1);          // +X
+            Quad(box, hx, hy, hz, -1, -1, -1, -1, -1, 1, -1, 1, 1, -1, 1, -1);      // -X
+            Quad(box, hx, hy, hz, -1, 1, -1, -1, 1, 1, 1, 1, 1, 1, 1, -1);          // +Y
+            Quad(box, hx, hy, hz, -1, -1, -1, 1, -1, -1, 1, -1, 1, -1, -1, 1);      // -Y
+            Quad(box, hx, hy, hz, -1, -1, 1, 1, -1, 1, 1, 1, 1, -1, 1, 1);          // +Z
+            Quad(box, hx, hy, hz, -1, -1, -1, -1, 1, -1, 1, 1, -1, 1, -1, -1);      // -Z
+
+            var faces = new MeshBatch();
+            faces.Meshes.Add(box);
+
+            return
+            [
+                new AddGeometryRequest { Name = "segment lines", Transform = pose, Polylines = lines },
+                new AddGeometryRequest { Name = "segment faces", Transform = pose.Clone(), Meshes = faces },
+            ];
+        }
+
+        /// <summary>A polyline from flat xyz values.</summary>
+        private static Polyline Line(Color color, bool closed, params float[] xyz)
+        {
+            var p = new Polyline { Color = color, Closed = closed };
+            p.Positions.Add(xyz);
+            return p;
+        }
+
+        /// <summary>
+        /// Adds one box face as 2 triangles. Corners are given as signs (-1/+1)
+        /// and scaled by the half sizes; they must be counter-clockwise seen from outside.
+        /// </summary>
+        private static void Quad(Mesh mesh, float hx, float hy, float hz, params int[] signs)
+        {
+            uint start = (uint)(mesh.Positions.Count / 3);
+            for (int i = 0; i < 12; i += 3)
+            {
+                mesh.Positions.Add(signs[i] * hx);
+                mesh.Positions.Add(signs[i + 1] * hy);
+                mesh.Positions.Add(signs[i + 2] * hz);
+            }
+            mesh.Indices.Add([start, start + 1, start + 2, start, start + 2, start + 3]);
+        }
+
+        /// <summary>
+        /// Rotation (yaw about Y, then pitch about X, then roll about Z; in degrees)
+        /// plus translation, as a column-major Matrix4 (translation in m[12..14]).
+        /// </summary>
+        public static Matrix4 Pose(double yawDeg, double pitchDeg, double rollDeg, float x, float y, float z)
+        {
+            double a = yawDeg * Math.PI / 180, b = pitchDeg * Math.PI / 180, c = rollDeg * Math.PI / 180;
+            double ca = Math.Cos(a), sa = Math.Sin(a);
+            double cb = Math.Cos(b), sb = Math.Sin(b);
+            double cc = Math.Cos(c), sc = Math.Sin(c);
+
+            // Rotates one vector: roll (Z), then pitch (X), then yaw (Y)  =>  R = Ry * Rx * Rz
+            double[] Rotate(double vx, double vy, double vz)
+            {
+                double x1 = vx * cc - vy * sc, y1 = vx * sc + vy * cc, z1 = vz;  // about Z
+                double y2 = y1 * cb - z1 * sb, z2 = y1 * sb + z1 * cb;           // about X
+                double x3 = x1 * ca + z2 * sa, z3 = -x1 * sa + z2 * ca;          // about Y
+                return new[] { x3, y2, z3 };
+            }
+
+            var m = new Matrix4();
+            // The columns of R are the rotated unit axes
+            foreach (var col in new[] { Rotate(1, 0, 0), Rotate(0, 1, 0), Rotate(0, 0, 1) })
+            {
+                m.M.Add((float)col[0]);
+                m.M.Add((float)col[1]);
+                m.M.Add((float)col[2]);
+                m.M.Add(0f);
+            }
+            m.M.Add(x); m.M.Add(y); m.M.Add(z); m.M.Add(1f); // translation column
+            return m;
+        }
+        
+        /// <summary>
+        /// Unit cube: 24 vertices (4 per face, flat shading), counter-clockwise triangles.</summary>
         private static Mesh Cube()
         {
             // Per face: normal (3), u axis (3), v axis (3), with u x v == normal

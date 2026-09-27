@@ -14,6 +14,7 @@
                 <Button Content="Add points"    Click="AddPoints_Click" />
                 <Button Content="Add big cloud" Click="AddBigCloud_Click" />
                 <Button Content="Add boxes"     Click="AddBoxes_Click" />
+                <Button Content="Add segment"   Click="AddSegment_Click" />
                 <Separator />
                 <Button Content="Remove last"   Click="RemoveLast_Click" />
             </ToolBar>
